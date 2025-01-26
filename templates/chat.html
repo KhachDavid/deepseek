@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with DeepSeek</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        .chat-box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 400px;
+            overflow-y: scroll;
+        }
+        .line {
+            margin-bottom: 10px;
+        }
+        .line.user {
+            text-align: right;
+            color: blue;
+        }
+        .line.bot {
+            text-align: left;
+            color: green;
+        }
+        input[type="text"] {
+            width: calc(100% - 100px);
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-box" id="chat-box">
+    <div class="line bot">Welcome! Ask me anything.</div>
+</div>
+
+<form id="chat-form" style="margin-top: 20px;">
+    <input type="text" id="user-input" placeholder="Write a message..." autocomplete="off">
+    <button type="submit">Send</button>
+</form>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+
+    chatForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        // Append the user's message to the chatbox
+        chatBox.innerHTML += `<div class="line user">${message}</div>`;
+        userInput.value = '';
+
+        // Send the message to the backend
+        const response = await fetch('/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            chatBox.innerHTML += `<div class="line bot">Error: ${data.error}</div>`;
+        } else {
+            chatBox.innerHTML += `<div class="line bot">${data.response}</div>`;
+        }
+
+        chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to the bottom
+    };
+</script>
+
+</body>
+</html>
