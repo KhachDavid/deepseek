@@ -251,6 +251,21 @@
         const sessionList = document.getElementById("session-list");
         sessionList.innerHTML = "";
 
+        if (sessions.length === 0) {
+          // If no sessions exist, create a default session
+          const defaultSessionResponse = await fetch("/new_session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_name: "Default Session" }),
+          });
+
+          const defaultSession = await defaultSessionResponse.json();
+          currentSessionId = defaultSession.session_id; // Set the new session as active
+          loadSessions(); // Reload the sessions after creating the default one
+          return;
+        }
+
+        // Populate the session list if sessions exist
         sessions.forEach((session) => {
           const li = document.createElement("li");
 
@@ -261,12 +276,18 @@
           }
 
           li.innerHTML = `
-            <a href="#" onclick="loadChat(${session.session_id})">${session.session_name}</a>
-            <button onclick="deleteSession(${session.session_id})">❌</button>
-        `;
+      <a href="#" onclick="loadChat(${session.session_id})">${session.session_name}</a>
+      <button onclick="deleteSession(${session.session_id})">❌</button>
+    `;
 
           sessionList.appendChild(li);
         });
+
+        // If there’s no active session yet, set the first session to active
+        if (!currentSessionId && sessions.length > 0) {
+          currentSessionId = sessions[0].session_id;
+          loadChat(currentSessionId);
+        }
       }
 
       // Create a new session
@@ -286,10 +307,10 @@
 
       // Delete a session
       async function deleteSession(sessionId) {
-        if (currentSessionId === sessionId) {
-          alert("You cannot delete the active session!");
-          return;
-        }
+        //if (currentSessionId === sessionId) {
+        //  alert("You cannot delete the active session!");
+        //  return;
+        //}
 
         await fetch(`/delete_session/${sessionId}`, { method: "DELETE" });
         loadSessions();
