@@ -1,3 +1,5 @@
 venv/
 get
 upload
+__pycache__/
+chat_sessions.db
