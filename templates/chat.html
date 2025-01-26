@@ -1,278 +1,413 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat with DeepSeek</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            height: 100vh; /* Full height for the page */
-            display: flex; /* Flex layout for sidebar and content */
-            background-color: #f0f2f5;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh; /* Full height for the page */
+        display: flex; /* Flex layout for sidebar and content */
+        background-color: #f0f2f5;
+      }
 
-        /* Sidebar styles */
-        .sidebar {
-    width: 250px; /* Sidebar width */
-    background-color: #333; /* Sidebar background color */
-    color: white;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0; /* Prevent the sidebar from shrinking */
-}
+      /* Sidebar styles */
+      .sidebar {
+        width: 250px; /* Sidebar width */
+        background-color: #333; /* Sidebar background color */
+        color: white;
+        padding: 20px;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0; /* Prevent the sidebar from shrinking */
+      }
 
+      .sidebar h2 {
+        margin-top: 0;
+        font-size: 1.5em;
+      }
 
-        .sidebar h2 {
-            margin-top: 0;
-            font-size: 1.5em;
-        }
+      .sidebar ul {
+        list-style: none;
+        padding: 0;
+      }
 
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
+      .sidebar ul li {
+        margin: 15px 0;
+      }
 
-        .sidebar ul li {
-            margin: 15px 0;
-        }
+      .sidebar ul li a {
+        color: white;
+        text-decoration: none;
+        font-size: 1rem;
+        transition: color 0.3s;
+      }
 
-        .sidebar ul li a {
-            color: white;
-            text-decoration: none;
-            font-size: 1rem;
-            transition: color 0.3s;
-        }
+      .sidebar ul li a:hover {
+        color: #2196f3; /* Link hover color */
+      }
 
-        .sidebar ul li a:hover {
-            color: #2196F3; /* Link hover color */
-        }
+      /* Main chat container styles */
+      .main-content {
+        flex-grow: 1; /* Take up the remaining space in the layout */
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
 
+      .chat-container {
+        flex: 1; /* Make the chat container take up all available vertical space */
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
 
-        /* Main chat container styles */
-        .main-content {
-            flex-grow: 1; /* Take up the remaining space in the layout */
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
+      .chat-box {
+        flex-grow: 1; /* Ensures the chat container expands to take remaining vertical space */
+        overflow-y: auto; /* Adds vertical scrolling when content overflows */
+        overflow-x: hidden; /* Ensures horizontal scrolling is disabled */
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
 
-        .chat-container {
-            flex: 1; /* Make the chat container take up all available vertical space */
-            display: flex;
-            flex-direction: column;
-        }
+      /* Updated styling for user and assistant interactions */
+      .line {
+        display: flex;
+        justify-content: flex-start; /* Default alignment to the left */
+        margin-bottom: 15px;
+        word-wrap: break-word;
+      }
 
-        .chat-box {
-            flex-grow: 1; /* Make the chat-box take up remaining space */
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            overflow-y: scroll;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+      .line.user {
+        justify-content: flex-end; /* Align user messages to the right */
+      }
 
-        .line {
-            margin-bottom: 15px;
-            word-wrap: break-word;
-        }
+      .line.assistant {
+        justify-content: flex-start; /* Align assistant messages to the left */
+      }
 
-        .line.user {
-            text-align: right;
-            color: #2196F3;
-            font-weight: bold;
-        }
+      .message {
+        max-width: 70%; /* Limit message width for better readability */
+        padding: 12px 16px;
+        border-radius: 15px;
+        margin: 5px 0;
+        word-wrap: break-word;
+        font-size: 14px;
+        line-height: 1.4;
+      }
 
-        .line.bot {
-            text-align: left;
-            color: #2E7D32;
-            font-weight: bold;
-        }
+      .user-message {
+        background-color: #2196f3;
+        color: white;
+        border-radius: 15px 15px 0 15px; /* Rounded corners */
+        text-align: left;
+      }
 
-        .message {
-            padding: 8px 12px;
-            border-radius: 15px;
-            margin: 5px 0;
-        }
+      .assistant-message {
+        background-color: #f1f8e9;
+        color: #2e7d32;
+        border-radius: 15px 15px 15px 0; /* Rounded corners */
+        text-align: left;
+      }
 
-        .user-message {
-            background-color: #e3f2fd;
-            float: right;
-        }
+      /* Add extra spacing between messages and container edges */
+      .chat-box {
+        padding: 20px;
+        overflow-y: auto;
+        background-color: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
 
-        .bot-message {
-            background-color: #f1f8e9;
-            float: left;
-        }
+      /* Make scrollbar visually distinct */
+      .chat-box::-webkit-scrollbar {
+        width: 8px;
+      }
 
-        .timestamp {
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 5px;
-        }
+      .chat-box::-webkit-scrollbar-thumb {
+        background-color: #cccccc;
+        border-radius: 4px;
+      }
 
-        form {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-        }
+      .chat-box::-webkit-scrollbar-thumb:hover {
+        background-color: #888888;
+      }
 
-        input[type="text"] {
-            flex-grow: 1;
-            padding: 8px 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            font-size: 14px;
-        }
+      .timestamp {
+        font-size: 0.75rem;
+        color: #666;
+        margin-top: 5px;
+      }
 
-        button {
-            padding: 8px 16px;
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
+      form {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
 
-        button:hover {
-            background-color: #1976D2;
-        }
+      input[type="text"] {
+        flex-grow: 1;
+        padding: 8px 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        font-size: 14px;
+      }
 
-        .reset-button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
+      button {
+        padding: 8px 16px;
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
 
-        .reset-button:hover {
-            background-color: #d32f2f;
-        }
+      button:hover {
+        background-color: #1976d2;
+      }
+
+      .reset-button {
+        margin-top: 10px;
+        padding: 8px 16px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .reset-button:hover {
+        background-color: #d32f2f;
+      }
+      /* Active session styling */
+      .session-item.active a {
+        color: #2196f3; /* Highlighted color */
+        font-weight: bold;
+      }
+      .session-item.active {
+        background-color: rgba(
+          33,
+          150,
+          243,
+          0.15
+        ); /* Light blue background for active session */
+        border-radius: 5px;
+      }
     </style>
     <!-- Load the marked.js library -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="sidebar" id="sidebar">
-        <h2>Menu</h2>
-        <ul>
-            <li><a href="#">Home</a></li>
-            <li><a href="#">Profile</a></li>
-            <li><a href="#">Settings</a></li>
-            <li><a href="#">Help</a></li>
-        </ul>
+      <h2>Menu</h2>
+      <ul id="session-list"></ul>
+      <button id="new-session-btn">+ New Chat</button>
     </div>
-    
+
     <div class="main-content">
-        <div class="chat-container">
-            <div class="chat-box" id="chat-box">
-                <div class="line bot">Welcome! Ask me anything.</div>
-            </div>
-    
-            <form id="chat-form">
-                <input type="text" id="user-input" placeholder="Write a message..." autocomplete="off">
-                <button type="submit">Send</button>
-            </form>
+      <div class="chat-container">
+        <div class="chat-box" id="chat-box">
+          <div class="line bot">Welcome! Ask me anything.</div>
         </div>
+
+        <form id="chat-form">
+          <input
+            type="text"
+            id="user-input"
+            placeholder="Write a message..."
+            autocomplete="off"
+          />
+          <button type="submit">Send</button>
+        </form>
+      </div>
     </div>
 
-<script>
+    <script>
+      // Fetch and display session list
+      let currentSessionId = null; // Store the ID of the current session
 
-const sidebar = document.getElementById('sidebar');
-        const resizer = document.getElementById('resizer');
+      // Fetch and display sessions
+      async function loadSessions() {
+        const response = await fetch("/sessions");
+        const sessions = await response.json();
+        const sessionList = document.getElementById("session-list");
+        sessionList.innerHTML = "";
 
-        let isResizing = false;
+        sessions.forEach((session) => {
+          const li = document.createElement("li");
 
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.body.style.cursor = 'col-resize';
-            document.addEventListener('mousemove', resize);
-            document.addEventListener('mouseup', stopResizing);
+          // Highlight the active session
+          li.classList.add("session-item");
+          if (session.session_id === currentSessionId) {
+            li.classList.add("active"); // Style the active session differently
+          }
+
+          li.innerHTML = `
+            <a href="#" onclick="loadChat(${session.session_id})">${session.session_name}</a>
+            <button onclick="deleteSession(${session.session_id})">❌</button>
+        `;
+
+          sessionList.appendChild(li);
+        });
+      }
+
+      // Create a new session
+      document.getElementById("new-session-btn").onclick = async () => {
+        const sessionName = prompt("Enter session name:") || "Untitled Session";
+        const response = await fetch("/new_session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_name: sessionName }),
         });
 
-        const resize = (e) => {
-            if (!isResizing) return;
+        const newSession = await response.json();
+        currentSessionId = newSession.session_id; // Set the newly created session as active
+        loadSessions();
+        loadChat(currentSessionId); // Automatically load the new session
+      };
 
-            const newWidth = e.clientX;
-            if (newWidth > 100 && newWidth < window.innerWidth - 100) {
-                sidebar.style.width = `${newWidth}px`;
-            }
-        };
+      // Delete a session
+      async function deleteSession(sessionId) {
+        if (currentSessionId === sessionId) {
+          alert("You cannot delete the active session!");
+          return;
+        }
 
-        const stopResizing = () => {
-            isResizing = false;
-            document.body.style.cursor = 'default';
-            document.removeEventListener('mousemove', resize);
-            document.removeEventListener('mouseup', stopResizing);
-        };
-    const chatBox = document.getElementById('chat-box');
-    const chatForm = document.getElementById('chat-form');
-    const userInput = document.getElementById('user-input');
+        await fetch(`/delete_session/${sessionId}`, { method: "DELETE" });
+        loadSessions();
+      }
 
-    chatForm.onsubmit = async (e) => {
+      // Load chat session
+      // Load chat session
+      async function loadChat(sessionId) {
+        currentSessionId = sessionId; // Track the active session
+
+        try {
+          // Fetch chat history from the backend
+          const response = await fetch(`/sessions/${sessionId}`);
+          const sessionData = await response.json();
+
+          if (response.status === 404) {
+            alert("Session not found.");
+            return;
+          }
+
+          const chatBox = document.getElementById("chat-box");
+          chatBox.innerHTML = ""; // Clear old messages
+
+          // Loop through each message and dynamically create DOM elements
+          sessionData.messages.forEach((message) => {
+            // Create a container for the message (line)
+            const messageContainer = document.createElement("div");
+            messageContainer.classList.add("line", message.role);
+
+            // Create a div for the message content
+            const messageContent = document.createElement("div");
+            messageContent.classList.add("message", `${message.role}-message`);
+            messageContent.innerHTML = marked.parse(message.content); // Parse the message content as Markdown
+            messageContainer.appendChild(messageContent);
+
+            // Append the entire line (message) to the chat-box
+            chatBox.appendChild(messageContainer);
+          });
+
+          // Highlight the newly active session in the sidebar
+          highlightActiveSession(sessionId);
+
+          // Scroll to the bottom to show the most recent message
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } catch (err) {
+          console.error("Error loading chat session:", err);
+          alert("Failed to load chat session.");
+        }
+      }
+
+      // Highlight the active session in the sidebar
+      function highlightActiveSession(sessionId) {
+        const sessionListItems = document.querySelectorAll(
+          "#session-list .session-item"
+        );
+        sessionListItems.forEach((item) => {
+          item.classList.remove("active"); // Remove active class from all items
+          if (item.querySelector(`a[onclick="loadChat(${sessionId})"]`)) {
+            item.classList.add("active");
+          }
+        });
+      }
+
+      // Submit a new message
+      const chatBox = document.getElementById("chat-box");
+      const chatForm = document.getElementById("chat-form");
+      const userInput = document.getElementById("user-input");
+
+      chatForm.onsubmit = async (e) => {
         e.preventDefault();
         const message = userInput.value.trim();
-        if (!message) return;
+        if (!message || !currentSessionId) {
+          alert("Please select or create a session first.");
+          return;
+        }
 
         // Append the user's message to the chatbox
         chatBox.innerHTML += `<div class="line user"><div class="message user-message">${message}</div></div>`;
-        userInput.value = '';
+        userInput.value = "";
 
         try {
-            // Send the message to the backend
-            const response = await fetch('/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
-            });
+          // Send the user's message to the backend
+          const response = await fetch("/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: currentSessionId, message }),
+          });
 
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.statusText}`);
-            }
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error: ${errorText}`);
+          }
 
-            // Parse and stream the response incrementally
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let botMessage = "";
+          // Stream the assistant's response incrementally
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let botMessage = "";
 
-            // Create a div for the bot's message
-            const botMessageContainer = document.createElement('div');
-            botMessageContainer.classList.add('line', 'bot');
-            const botMessageContent = document.createElement('div');
-            botMessageContent.classList.add('message', 'bot-message');
-            botMessageContainer.appendChild(botMessageContent);
-            chatBox.appendChild(botMessageContainer);
+          // Create a div for the assistant's message
+          const botMessageContainer = document.createElement("div");
+          botMessageContainer.classList.add("line", "assistant");
+          const botMessageContent = document.createElement("div");
+          botMessageContent.classList.add("message", "assistant-message");
+          botMessageContainer.appendChild(botMessageContent);
+          chatBox.appendChild(botMessageContainer);
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-                // Decode the streamed chunk and append it to the bot message
-                const chunk = decoder.decode(value, { stream: true });
-                botMessage += chunk;
-                botMessageContent.innerHTML = marked.parse(botMessage);
+            // Decode the streamed chunk and append it
+            const chunk = decoder.decode(value, { stream: true });
+            botMessage += chunk;
+            botMessageContent.innerHTML = marked.parse(botMessage); // Support Markdown formatting
 
-                // Scroll to the bottom
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-
+            // Scroll to the latest message
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
         } catch (err) {
-            chatBox.innerHTML += `<div class="line bot"><div class="message bot-message">Error: Could not connect to server or stream response.</div></div>`;
+          chatBox.innerHTML += `<div class="line bot"><div class="message bot-message">Error: Could not connect to server or stream response.</div></div>`;
         }
 
-        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
-    };
-</script>
+        // Ensure the view scrolls to the bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+      };
 
-
-</body>
+      // Load sessions on page load
+      window.onload = loadSessions;
+    </script>
+  </body>
 </html>

@@ -1,12 +1,12 @@
-from flask import Flask, request, jsonify, Response, session, copy_current_request_context
+from flask import Flask, request, jsonify, Response, session, copy_current_request_context, current_app
 from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
 
 from datetime import datetime, timezone
+import datetime
 import threading
 import ollama
 import sys
-import datetime
 
 app = Flask(__name__)
 app.secret_key = 'nldsgf4-32io5476in-kjhgfsfd-bkjhbf'
@@ -19,8 +19,8 @@ class Session(db.Model):
     __tablename__ = 'sessions'
     session_id = db.Column(db.Integer, primary_key=True)
     session_name = db.Column(db.String(100), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))  # Tememporary solution
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))  # Tem
     messages = db.relationship('Message', backref='session', cascade='all, delete-orphan')
 
 class Message(db.Model):
@@ -29,7 +29,8 @@ class Message(db.Model):
     session_id = db.Column(db.Integer, db.ForeignKey('sessions.session_id'), nullable=False)
     role = db.Column(db.String(50), nullable=False)  # "user" or "assistant"
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))  # Temporary solution
+
 
 @app.cli.command('init-db')
 def init_db():
@@ -56,11 +57,21 @@ def home():
 
 @app.route('/new_session', methods=['POST'])
 def new_session():
-    session_name = request.json.get('session_name', 'Untitled Session')
-    new_session = Session(session_name=session_name)
-    db.session.add(new_session)
-    db.session.commit()
-    return jsonify({"session_id": new_session.session_id, "session_name": new_session.session_name})
+    try:
+        session_name = request.json.get('session_name', 'Untitled Session')
+        new_session = Session(session_name=session_name)
+
+        # Add and commit the session to the database
+        db.session.add(new_session)
+        db.session.commit()
+
+        # Log the new session ID
+        print(f"New session created with ID {new_session.session_id}")
+        return jsonify({"session_id": new_session.session_id, "session_name": new_session.session_name})
+    except Exception as e:
+        print(f"Error creating new session: {e}")
+        return jsonify({"error": "Failed to create session"}), 500
+
 
 @app.route('/sessions', methods=['GET'])
 def get_sessions():
@@ -70,6 +81,26 @@ def get_sessions():
         for s in sessions
     ])
 
+@app.route('/sessions/<int:session_id>', methods=['GET'])
+def get_session(session_id):
+    try:
+        session_obj = Session.query.get(session_id)
+        
+        if session_obj is None:
+            return jsonify({"error": "Session not found"}), 404
+
+        # Return the session data along with its messages
+        messages = [
+            {"role": message.role, "content": message.content, "created_at": message.created_at}
+            for message in session_obj.messages
+        ]
+        print(f"Retrieved session {session_id} with {len(messages)} messages")
+        return jsonify({"session_id": session_obj.session_id, "session_name": session_obj.session_name, "messages": messages})
+    except Exception as e:
+        print(f"Error retrieving session {session_id}: {e}")
+        return jsonify({"error": "Failed to retrieve session"}), 500
+
+
 @app.route('/delete_session/<int:session_id>', methods=['DELETE'])
 def delete_session(session_id):
     session_to_delete = Session.query.get_or_404(session_id)
@@ -77,70 +108,88 @@ def delete_session(session_id):
     db.session.commit()
     return jsonify({"message": "Session deleted successfully."})
 
-
 @app.route('/send', methods=['POST'])
 def send():
     """
     Handles user input, sends it to the model, streams the response in chunks,
     and maintains chat context safely using @copy_current_request_context.
     """
-    if 'chat_history' not in session:
-        session['chat_history'] = []
+    session_id = request.json.get('session_id')
+    user_message = request.json.get('message')
 
-    chat_history = session['chat_history']
+    print(f"Request JSON: {request.json}")  # Log the entire request body
+    print(f"Session ID: {session_id}")
+    print(f"User Message: {user_message}")
 
-    # Get user input from the POST request
-    user_message = request.json.get("message")
-    if not user_message:
-        return jsonify({"error": "No message provided"}), 400
+    if session_id is None or user_message is None:
+        return jsonify({"error": "Session ID and message are required"}), 400
 
-    # Append the user's message to the conversation history before streaming
-    chat_history.append({'role': 'user', 'content': user_message})
-    session['chat_history'] = chat_history
+    # Verify the session exists
+    session_obj = Session.query.get(session_id)
+    if session_obj is None:
+        return jsonify({"error": "Session not found"}), 404
 
+    # Retrieve the chat history for the session
+    chat_history = [
+        {"role": m.role, "content": m.content}
+        for m in session_obj.messages
+    ]
+
+    # Append the user's message as the next entry
+    new_message = Message(session_id=session_id, role="user", content=user_message)
+    db.session.add(new_message)
+    db.session.commit()
+    
     @copy_current_request_context
     def save_chat_history(assistant_message):
         """
-        Safely saves the assistant's full response to session chat history after streaming.
+        Safely saves the assistant's full response to session chat history.
         """
-        chat_history.append({'role': 'assistant', 'content': assistant_message})
-        session['chat_history'] = chat_history  # Save the conversation in the session
+        try:
+            # Ensure database operations have the correct context
+            with app.app_context():
+                # Save the assistant's message to the database
+                new_response = Message(session_id=session_id, role='assistant', content=assistant_message)
+                db.session.add(new_response)
+                db.session.commit()
+
+                print(f"Assistant response saved: {assistant_message}")
+
+        except Exception as e:
+            print(f"Error saving chat history: {str(e)}")
     
     def generate_stream():
         """
-        Streams the response from the model token by token directly to the client.
+        Streams the response from the model token-by-token directly to the client.
         """
-        assistant_message = ''  # Collect the assistant's full response
+        assistant_message = ''  # To accumulate the assistant's response
+
         try:
             # Call the model with streaming enabled
             response_iterator = ollama.chat(model=desiredModel, stream=True, messages=chat_history)
 
             print(f"\n[{datetime.datetime.now()}] Assistant is responding:\n")
             for chunk in response_iterator:
-                # Get the content of the message
-                token = chunk.get('message', {}).get('content', '')
+                token = chunk.get('message', {}).get('content', '')  # Extract the token
+                if token:  # Only process non-empty tokens
+                    assistant_message += token  # Build the full assistant message
+                    print(token, end='', flush=True)  # Print for debugging
+                    yield token  # Send the streamed token to the client incrementally
 
-                if token:  # Only handle non-empty tokens
-                    # Combine the token into the full assistant message for saving later
-                    assistant_message += token
-
-                    # Print the token to the console in real-time (helpful for debugging)
-                    print(token, end='', flush=True)
-
-                    # Yield the token directly to the client
-                    yield token  # Send the individual token to the frontend
-
-            # Save the assistant's full response to chat history once streaming is done
-            threading.Thread(target=save_chat_history, args=(assistant_message.strip(),)).start()
+            # Once streaming completes, save the full assistant response
+            print("\nAssistant response completed.")
+            with app.app_context():  # Ensure application context for DB operations
+                new_response = Message(session_id=session_id, role='assistant', content=assistant_message.strip())
+                db.session.add(new_response)
+                db.session.commit()
 
         except Exception as e:
             error_message = f"[{datetime.datetime.now()}] [ERROR]: {str(e)}"
-            print(f"\n{error_message}")  # Log the error to the console
-            yield error_message + "\n"  # Send the error to the client
+            print(error_message)  # Log to console
+            yield error_message  # Send error details to the client as part of the response
 
 
-
-    # Return the streaming response to the frontend as text/plain
+    # Return a streaming response
     return Response(generate_stream(), content_type='text/plain')
 
 @app.route('/reset', methods=['POST'])
