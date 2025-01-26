@@ -13,6 +13,7 @@
         display: flex; /* Flex layout for sidebar and content */
         background-color: #f0f2f5;
       }
+
       * {
         box-sizing: border-box;
       }
@@ -158,12 +159,14 @@
         gap: 10px;
       }
 
-      input[type="text"] {
+      textarea#user-input {
         flex-grow: 1;
         padding: 8px 16px;
         border: 1px solid #e0e0e0;
         border-radius: 20px;
         font-size: 14px;
+        resize: none; /* Prevent resizing to maintain consistent appearance */
+        line-height: 1.4;
       }
 
       button {
@@ -226,14 +229,15 @@
         </div>
 
         <form id="chat-form">
-          <input
-            type="text"
-            id="user-input"
-            placeholder="Write a message..."
-            autocomplete="off"
-          />
-          <button type="submit">Send</button>
-        </form>
+            <textarea
+              id="user-input"
+              placeholder="Write a message..."
+              rows="2"
+              autocomplete="off"
+            ></textarea>
+            <button type="submit">Send</button>
+          </form>
+          
       </div>
     </div>
 
@@ -292,7 +296,6 @@
         loadSessions();
       }
 
-      // Load chat session
       // Load chat session
       async function loadChat(sessionId) {
         currentSessionId = sessionId; // Track the active session
@@ -429,6 +432,15 @@
         // Ensure the view scrolls to the bottom
         chatBox.scrollTop = chatBox.scrollHeight;
       };
+
+// Allow Shift+Enter for newlines in the textarea
+userInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    // Trigger form submission programmatically
+    chatForm.dispatchEvent(new Event("submit"));
+  }
+});
 
       // Load sessions on page load
       window.onload = loadSessions;
