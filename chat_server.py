@@ -117,10 +117,6 @@ def send():
     session_id = request.json.get('session_id')
     user_message = request.json.get('message')
 
-    print(f"Request JSON: {request.json}")  # Log the entire request body
-    print(f"Session ID: {session_id}")
-    print(f"User Message: {user_message}")
-
     if session_id is None or user_message is None:
         return jsonify({"error": "Session ID and message are required"}), 400
 

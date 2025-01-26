@@ -13,6 +13,9 @@
         display: flex; /* Flex layout for sidebar and content */
         background-color: #f0f2f5;
       }
+      * {
+        box-sizing: border-box;
+      }
 
       /* Sidebar styles */
       .sidebar {
@@ -55,6 +58,7 @@
         display: flex;
         flex-direction: column;
         padding: 20px;
+        overflow-x: hidden; /* Prevent horizontal scrolling */
       }
 
       .chat-container {
@@ -84,7 +88,9 @@
       }
 
       .line.user {
-        justify-content: flex-end; /* Align user messages to the right */
+        justify-content: flex-end; /* Push user messages to the right */
+        flex-wrap: wrap; /* Allow wrapping to the next line */
+        overflow-wrap: anywhere; /* Ensure content breaks on small screens */
       }
 
       .line.assistant {
@@ -119,6 +125,7 @@
       .chat-box {
         padding: 20px;
         overflow-y: auto;
+        overflow-x: hidden;
         background-color: #fff;
         border: 1px solid #e0e0e0;
         border-radius: 10px;
@@ -309,14 +316,28 @@
             const messageContainer = document.createElement("div");
             messageContainer.classList.add("line", message.role);
 
-            // Create a div for the message content
-            const messageContent = document.createElement("div");
-            messageContent.classList.add("message", `${message.role}-message`);
-            messageContent.innerHTML = marked.parse(message.content); // Parse the message content as Markdown
-            messageContainer.appendChild(messageContent);
-
-            // Append the entire line (message) to the chat-box
-            chatBox.appendChild(messageContainer);
+            if (message.role === "user") {
+              const markdownMessage = `\`\`\`\n${message.content}\n\`\`\``;
+              // Create a div for the message content
+              const messageContent = document.createElement("div");
+              messageContent.classList.add(
+                "message",
+                `${message.role}-message`
+              );
+              messageContent.innerHTML = marked.parse(markdownMessage); // Parse the message content as Markdown
+              messageContainer.appendChild(messageContent);
+              chatBox.appendChild(messageContainer);
+            } else {
+              // Create a div for the message content
+              const messageContent = document.createElement("div");
+              messageContent.classList.add(
+                "message",
+                `${message.role}-message`
+              );
+              messageContent.innerHTML = marked.parse(message.content); // Parse the message content as Markdown
+              messageContainer.appendChild(messageContent);
+              chatBox.appendChild(messageContainer);
+            }
           });
 
           // Highlight the newly active session in the sidebar
@@ -355,9 +376,12 @@
           alert("Please select or create a session first.");
           return;
         }
-
+        const markdownMessage = `\`\`\`\n${message}\n\`\`\``;
+        const parsedMessage = marked.parse(markdownMessage);
         // Append the user's message to the chatbox
-        chatBox.innerHTML += `<div class="line user"><div class="message user-message">${message}</div></div>`;
+        chatBox.innerHTML += `<div class="line user"><div class="message user-message">${marked.parse(
+          parsedMessage
+        )}</div></div>`;
         userInput.value = "";
 
         try {
