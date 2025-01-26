@@ -229,15 +229,14 @@
         </div>
 
         <form id="chat-form">
-            <textarea
-              id="user-input"
-              placeholder="Write a message..."
-              rows="2"
-              autocomplete="off"
-            ></textarea>
-            <button type="submit">Send</button>
-          </form>
-          
+          <textarea
+            id="user-input"
+            placeholder="Write a message..."
+            rows="2"
+            autocomplete="off"
+          ></textarea>
+          <button type="submit">Send</button>
+        </form>
       </div>
     </div>
 
@@ -433,14 +432,14 @@
         chatBox.scrollTop = chatBox.scrollHeight;
       };
 
-// Allow Shift+Enter for newlines in the textarea
-userInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    // Trigger form submission programmatically
-    chatForm.dispatchEvent(new Event("submit"));
-  }
-});
+      // Allow Shift+Enter for newlines in the textarea
+      userInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          // Trigger form submission programmatically
+          chatForm.dispatchEvent(new Event("submit"));
+        }
+      });
 
       // Load sessions on page load
       window.onload = loadSessions;
