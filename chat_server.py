@@ -158,7 +158,7 @@ def new_session():
 
     try:
         session_name = request.json.get('session_name', 'Untitled Session')
-        new_session = Session(session_name=session_name, user_id=user.user_id)
+        new_session = Session(session_name=session_name, user_id=user.user_id, created_at=datetime.datetime.now(timezone.utc))
         db.session.add(new_session)
         db.session.commit()
 
