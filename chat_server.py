@@ -75,7 +75,7 @@ def new_session():
 
 @app.route('/sessions', methods=['GET'])
 def get_sessions():
-    sessions = Session.query.order_by(Session.updated_at.desc()).all()
+    sessions = Session.query.order_by(Session.updated_at.asc()).all()
     return jsonify([
         {"session_id": s.session_id, "session_name": s.session_name, "created_at": s.created_at}
         for s in sessions

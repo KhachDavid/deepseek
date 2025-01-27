@@ -217,7 +217,7 @@
   </head>
   <body>
     <div class="sidebar" id="sidebar">
-      <h2>Menu</h2>
+      <h2>Chats</h2>
       <ul id="session-list"></ul>
       <button id="new-session-btn">+ New Chat</button>
     </div>
@@ -251,6 +251,11 @@
         const sessions = await response.json();
         const sessionList = document.getElementById("session-list");
         sessionList.innerHTML = "";
+
+        // sort based on which one is most recent
+        sessions.sort((a, b) => {
+          return new Date(b.created_at) - new Date(a.created_at);
+        });
 
         if (sessions.length === 0) {
           // If no sessions exist, create a default session
