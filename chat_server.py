@@ -41,7 +41,7 @@ def init_db():
 # Define the model used for chat
 if len(sys.argv) > 1:
     try:
-        desiredModel = sys.argv[2]
+        desiredModel = sys.argv[1]
     except Exception:
         desiredModel = 'deepseek-r1:14b'
 else:
@@ -64,11 +64,8 @@ def new_session():
         db.session.add(new_session)
         db.session.commit()
 
-        # Log the new session ID
-        print(f"New session created with ID {new_session.session_id}")
         return jsonify({"session_id": new_session.session_id, "session_name": new_session.session_name})
     except Exception as e:
-        print(f"Error creating new session: {e}")
         return jsonify({"error": "Failed to create session"}), 500
 
 
@@ -93,10 +90,8 @@ def get_session(session_id):
             {"role": message.role, "content": message.content, "created_at": message.created_at}
             for message in session_obj.messages
         ]
-        print(f"Retrieved session {session_id} with {len(messages)} messages")
         return jsonify({"session_id": session_obj.session_id, "session_name": session_obj.session_name, "messages": messages})
     except Exception as e:
-        print(f"Error retrieving session {session_id}: {e}")
         return jsonify({"error": "Failed to retrieve session"}), 500
 
 
@@ -145,10 +140,8 @@ def send():
             new_response = Message(session_id=session_id, role='assistant', content=assistant_message)
             db.session.add(new_response)
             db.session.commit()
-            print(f"Assistant response saved: {assistant_message}")
         except Exception as e:
             db.session.rollback()  # Rollback any changes on error
-            print(f"Error saving chat history: {str(e)}")
 
     
     def generate_stream():
@@ -165,15 +158,12 @@ def send():
             # Call the model with streaming enabled
             response_iterator = ollama.chat(model=desiredModel, stream=True, messages=chat_history)
 
-            print(f"\n[{datetime.datetime.now()}] Assistant is responding:\n")
             for chunk in response_iterator:
                 token = chunk.get('message', {}).get('content', '')  # Extract the token
                 if token:  # Only process non-empty tokens
                     assistant_message += token  # Build the full assistant message
-                    print(token, end='', flush=True)  # Print for debugging
                     yield token  # Send the streamed token to the client incrementally
 
-            print("\nAssistant response completed.")
             # Persist the full assistant response into the database
             save_chat_history(assistant_message.strip())
 
@@ -182,7 +172,6 @@ def send():
 
         except Exception as e:
             error_message = f"[{datetime.datetime.now()}] [ERROR]: {str(e)}"
-            print(error_message)  # Log to console
             yield error_message
 
     # Return a streaming response
@@ -228,7 +217,6 @@ def rename_session(session_id):
             "session_name": session_obj.session_name
         })
     except Exception as e:
-        print(f"Error renaming session {session_id}: {e}")
         db.session.rollback()  # Rollback in case of an error
         return jsonify({"error": "Failed to rename session."}), 500
 
