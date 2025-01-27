@@ -142,23 +142,25 @@ def send():
         Safely saves the assistant's full response to session chat history.
         """
         try:
-            # Ensure database operations have the correct context
-            with app.app_context():
-                # Save the assistant's message to the database
-                new_response = Message(session_id=session_id, role='assistant', content=assistant_message)
-                db.session.add(new_response)
-                db.session.commit()
-
-                print(f"Assistant response saved: {assistant_message}")
-
+            # Save the assistant's message to the database
+            new_response = Message(session_id=session_id, role='assistant', content=assistant_message)
+            db.session.add(new_response)
+            db.session.commit()
+            print(f"Assistant response saved: {assistant_message}")
         except Exception as e:
+            db.session.rollback()  # Rollback any changes on error
             print(f"Error saving chat history: {str(e)}")
+
     
     def generate_stream():
         """
         Streams the response from the model token-by-token directly to the client.
         """
+        nonlocal chat_history  # Allow local modification of chat_history
         assistant_message = ''  # To accumulate the assistant's response
+
+        # Update chat history with the user's latest message
+        chat_history.append({"role": "user", "content": user_message})
 
         try:
             # Call the model with streaming enabled
@@ -172,17 +174,18 @@ def send():
                     print(token, end='', flush=True)  # Print for debugging
                     yield token  # Send the streamed token to the client incrementally
 
-            # Once streaming completes, save the full assistant response
             print("\nAssistant response completed.")
-            with app.app_context():  # Ensure application context for DB operations
-                new_response = Message(session_id=session_id, role='assistant', content=assistant_message.strip())
-                db.session.add(new_response)
-                db.session.commit()
+            # Persist the full assistant response into the database
+            save_chat_history(assistant_message.strip())
+
+            # Update chat history with assistant response
+            chat_history.append({"role": "assistant", "content": assistant_message.strip()})
 
         except Exception as e:
             error_message = f"[{datetime.datetime.now()}] [ERROR]: {str(e)}"
             print(error_message)  # Log to console
-            yield error_message  # Send error details to the client as part of the response
+            yield error_message
+
 
 
     # Return a streaming response

@@ -234,6 +234,7 @@
             placeholder="Write a message..."
             rows="2"
             autocomplete="off"
+            autofocus
           ></textarea>
           <button type="submit">Send</button>
         </form>
@@ -256,7 +257,7 @@
           const defaultSessionResponse = await fetch("/new_session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_name: "Default Session" }),
+            body: JSON.stringify({ session_name: "First Session" }),
           });
 
           const defaultSession = await defaultSessionResponse.json();
