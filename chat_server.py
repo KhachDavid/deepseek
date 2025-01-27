@@ -59,7 +59,7 @@ def home():
 def new_session():
     try:
         session_name = request.json.get('session_name', 'Untitled Session')
-        new_session = Session(session_name=session_name)
+        new_session = Session(session_name=session_name, created_at=datetime.datetime.now(timezone.utc))
 
         # Add and commit the session to the database
         db.session.add(new_session)
