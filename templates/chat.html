@@ -620,6 +620,22 @@
 
       chatForm.onsubmit = async (e) => {
         e.preventDefault();
+        chatSubmit(e);
+      };
+
+      // Allow Shift+Enter for newlines in the textarea
+      userInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          // Trigger form submission programmatically
+          // dispatch reloads the page trigger the details of chatForm
+          //chatForm.dispatchEvent(new Event("submit"));
+          chatSubmit(e);
+        }
+      });
+
+      async function chatSubmit(e) {
+        e.preventDefault();
         const message = userInput.value.trim();
         if (!message || !currentSessionId) {
           alert("Please select or create a session first.");
@@ -677,17 +693,7 @@
 
         // Ensure the view scrolls to the bottom
         chatBox.scrollTop = chatBox.scrollHeight;
-      };
-
-      // Allow Shift+Enter for newlines in the textarea
-      userInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          // Trigger form submission programmatically
-          chatForm.dispatchEvent(new Event("submit"));
-        }
-      });
-
+      }
       // Load sessions on page load
       window.onload = loadSessions;
     </script>
