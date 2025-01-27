@@ -208,6 +208,7 @@
         align-items: center;
         justify-content: space-between; /* Align heading and button */
         margin-bottom: 20px;
+        margin-top: 10px
       }
 
       h2 {
@@ -409,7 +410,26 @@
         <h2>Chats</h2>
         <button id="new-session-btn" title="Create new chat">+</button>
       </div>
-      <ul id="session-list"></ul>
+
+      <!-- Chat list wrapper -->
+      <div class="session-list-wrapper">
+        <ul id="session-list"></ul>
+      </div>
+
+      <!-- Sidebar footer for logout and GitHub buttons -->
+      <div class="sidebar-footer">
+        <button id="logout-btn" class="logout-btn" style="display: none">
+          Logout
+        </button>
+        <button
+          id="github-btn"
+          class="github-btn"
+          title="View this project on GitHub"
+          onclick="window.open('https://github.com/KhachDavid/deepseek', '_blank')"
+        >
+          View on GitHub
+        </button>
+      </div>
     </div>
 
     <div class="main-content">
@@ -508,6 +528,90 @@
     </div>
 
     <style>
+      /* Sidebar layout styles */
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        height: 100%; /* Full height */
+        width: 250px; /* Fixed width */
+        background-color: #333;
+        color: white;
+        padding: 0 10px 20px; /* Padding at the bottom for visual spacing */
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      /* Chat list wrapper to enable independent scrolling */
+      .session-list-wrapper {
+        flex-grow: 1; /* Automatically expand to fill available space */
+        overflow-y: auto; /* Allow vertical scrolling */
+      }
+
+      /* Highlight scrollbar for the chat list */
+      .session-list-wrapper::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .session-list-wrapper::-webkit-scrollbar-thumb {
+        background-color: #666;
+        border-radius: 4px;
+      }
+
+      .session-list-wrapper::-webkit-scrollbar-thumb:hover {
+        background-color: #888;
+      }
+
+      /* Footer styles (always pinned to the bottom of the sidebar) */
+      .sidebar-footer {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center; /* Center buttons horizontally */
+        padding: 10px 0;
+        margin-top: auto; /* Push footer to the bottom of the sidebar */
+      }
+
+      .logout-btn,
+      .github-btn {
+        width: 80%; /* Control the button width */
+        padding: 10px 16px;
+        font-size: 14px;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.3s;
+      }
+
+      /* Logout button styling */
+      .logout-btn {
+        background-color: #f44336;
+        color: white;
+      }
+
+      .logout-btn:hover {
+        background-color: #d32f2f;
+      }
+
+      /* GitHub button styling */
+      .github-btn {
+        background-color: #333;
+        color: white;
+      }
+
+      .github-btn:hover {
+        background-color: #555;
+      }
+
+      /* Handle long session names: truncate with ellipsis */
+      .session-item .session-link {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+    </style>
+
+    <style>
       /* Modal styles for proper stacking */
       .modal {
         position: fixed;
@@ -589,17 +693,32 @@
 
     <script>
       // Check if the user is logged in
+      // Handle logout functionality
+      document.getElementById("logout-btn").onclick = async function () {
+        const response = await fetch("/logout", { method: "POST" }); // Call to your backend logout route
+        if (response.ok) {
+          alert("Successfully logged out!");
+          checkAuth(); // Re-check authentication status to refresh UI
+        } else {
+          alert("Failed to log out. Please try again!");
+        }
+      };
+
+      // Adjust display based on authentication status
       async function checkAuth() {
-        const response = await fetch("/user_status"); // Backend route to get user status
+        const response = await fetch("/user_status");
         const user = await response.json();
+
         if (user.logged_in) {
-          // User is logged in
+          // Show logout button if user is logged in
+          document.getElementById("logout-btn").style.display = "block";
           document.getElementById("auth-buttons").style.display = "none"; // Hide login/signup buttons
           document.getElementById("chat-form").style.display = "block"; // Show chat form
-          loadSessions(); // Fetch sessions for the logged-in user
+          loadSessions(); // Load user sessions
         } else {
-          // User is not logged in
-          document.getElementById("auth-buttons").style.display = "block"; // Show login/signup buttons
+          // Hide logout button and show login/signup buttons
+          document.getElementById("logout-btn").style.display = "none";
+          document.getElementById("auth-buttons").style.display = "block";
           document.getElementById("chat-form").style.display = "none"; // Hide chat form
         }
       }
@@ -607,6 +726,9 @@
       // Open login modal
       document.getElementById("login-btn").onclick = () => {
         document.getElementById("login-modal").style.display = "flex";
+        // stop displaying the Welcome please login message
+        document.querySelector(".line").style.display = "none";
+        
       };
 
       // Open signup modal
