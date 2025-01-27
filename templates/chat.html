@@ -26,7 +26,7 @@
         padding: 20px;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         flex-shrink: 0; /* Prevent the sidebar from shrinking */
-        overflow: auto;  
+        overflow: auto;
       }
 
       .sidebar h2 {
@@ -212,15 +212,72 @@
         ); /* Light blue background for active session */
         border-radius: 5px;
       }
+      /* Sidebar header styling */
+      .sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Align heading and button */
+        margin-bottom: 20px;
+      }
+
+      h2 {
+        margin: 0; /* Remove extra space around the Chats heading */
+      }
+
+      #new-session-btn {
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 50%; /* Makes the button circular */
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem; /* Set the font size for the "+" */
+        font-weight: bold;
+        transition: background-color 0.3s;
+        position: relative;
+      }
+
+      #new-session-btn:hover {
+        background-color: #1976d2; /* Darker blue on hover */
+      }
+
+      #new-session-btn[title]::after {
+        content: attr(
+          title
+        ); /* Use the `title` attribute to display the tooltip */
+        background-color: #333;
+        color: white;
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        border-radius: 4px;
+        position: absolute;
+        left: -30px;
+        top: 40px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s;
+      }
+
+      #new-session-btn:hover::after {
+        opacity: 1;
+        visibility: visible; /* Show the tooltip on hover */
+      }
     </style>
     <!-- Load the marked.js library -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   </head>
   <body>
     <div class="sidebar" id="sidebar">
-      <h2>Chats</h2>
+      <div class="sidebar-header">
+        <h2>Chats</h2>
+        <button id="new-session-btn" title="Create new chat">+</button>
+      </div>
       <ul id="session-list"></ul>
-      <button id="new-session-btn">+ New Chat</button>
     </div>
 
     <div class="main-content">
