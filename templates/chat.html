@@ -153,22 +153,25 @@
         color: #666;
         margin-top: 5px;
       }
-
       form {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
-      }
+  margin-top: 10px;
+  display: flex; /* Use flexbox to align items horizontally */
+  align-items: center; /* Align the textarea and button vertically */
+  gap: 0; /* Remove the gap between the input and button */
+  width: 100%; /* Ensure the form takes up the full available width */
+}
 
       textarea#user-input {
-        flex-grow: 1;
-        padding: 8px 16px;
-        border: 1px solid #e0e0e0;
-        border-radius: 20px;
-        font-size: 14px;
-        resize: none; /* Prevent resizing to maintain consistent appearance */
-        line-height: 2;
-      }
+  flex-grow: 1; /* Allow textarea to stretch and take up remaining space */
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px; /* Keep the rounded edges */
+  font-size: 14px;
+  resize: none; /* Prevent resizing of textarea */
+  line-height: 2;
+  margin: 0; /* Remove any default margin */
+  width: inherit;
+}
 
       button {
         padding: 8px 16px;
@@ -375,6 +378,27 @@
         cursor: pointer;
         font-size: 14px;
       }
+      #chat-submit {
+        /* put in the middle */
+        margin-left: 10px;
+        padding: 8px 16px;
+        background-color: #2196f3;
+
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        
+        /* can we center the button */
+        margin-top: 10px;
+        float: right;
+      }
+      .auth-forms {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
     </style>
     <!-- Load the marked.js library -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -389,23 +413,224 @@
     </div>
 
     <div class="main-content">
-      <div class="chat-container">
-        <div class="chat-box" id="chat-box">
-          <div class="line bot">Welcome! Ask me anything.</div>
-        </div>
+    <!-- Chat pane -->
+    <div class="chat-container">
+      <div class="chat-box" id="chat-box">
+        <div class="line bot">Welcome! Please log in to start chatting.</div>
+      </div>
 
-        <form id="chat-form">
-          <textarea
-            id="user-input"
-            placeholder="Write a message..."
-            rows="2"
-            autocomplete="off"
-            autofocus
-          ></textarea>
-          <button type="submit">Send</button>
+      <!-- Login and Signup buttons will show here if the user is not logged in -->
+      <div id="auth-buttons" style="display: none; text-align: center; margin-top: 20px;">
+        <button id="login-btn" style="padding: 8px 16px; margin: 0 5px;">Login</button>
+        <button id="signup-btn" style="padding: 8px 16px; margin: 0 5px;">Sign Up</button>
+      </div>
+
+      <!-- Input field for chat; hidden when not logged in -->
+      <form id="chat-form" style="display: none;">
+        <textarea
+          id="user-input"
+          placeholder="Write a message..."
+          rows="2"
+          autocomplete="off"
+          autofocus
+        ></textarea>
+        <button id="chat-submit" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2>Login</h2>
+        <form id="login-form" class="auth-forms">
+          <div class="form-group"> <!-- Group to stack inputs -->
+            <input type="text" id="login-username" placeholder="Username" required />
+            <input type="password" id="login-password" placeholder="Password" required />
+          </div>
+          <div class="form-buttons"> <!-- Group to stack buttons -->
+            <button type="submit" class="login-btn">Login</button>
+            <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+          </div>
         </form>
       </div>
     </div>
+  
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2>Sign Up</h2>
+        <form id="signup-form" class="auth-forms">
+          <div class="form-group"> <!-- Group to stack inputs -->
+            <input type="text" id="signup-username" placeholder="Username" required />
+            <input type="password" id="signup-password" placeholder="Password" required />
+          </div>
+          <div class="form-buttons"> <!-- Group to stack buttons -->
+            <button type="submit" class="signup-btn">Sign Up</button>
+            <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  
+    <style>
+      /* Modal styles for proper stacking */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+  
+      .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 300px; /* Fixed width for compact content */
+        text-align: center;
+      }
+  
+      .modal-content h2 {
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+      }
+  
+      /* Stack form elements vertically */
+      .form-group {
+        display: flex;
+        flex-direction: column; /* Stack children vertically */
+        gap: 10px; /* Add spacing between the inputs */
+        margin-bottom: 20px;
+      }
+  
+      .form-group input {
+        width: 100%; /* Stretch inputs to fill container width */
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+  
+      /* Stack buttons vertically, center align */
+      .form-buttons {
+        display: flex;
+        gap: 10px; /* Spacing between buttons */
+      }
+  
+      /* Individual button styles */
+      .form-buttons button {
+        padding: 10px 16px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+  
+      .form-buttons .login-btn,
+      .form-buttons .signup-btn {
+        background-color: #2196f3;
+        color: white;
+      }
+  
+      .form-buttons .login-btn:hover,
+      .form-buttons .signup-btn:hover {
+        background-color: #1976d2;
+      }
+  
+      .form-buttons .cancel-btn {
+        background-color: #f44336;
+        color: white;
+      }
+  
+      .form-buttons .cancel-btn:hover {
+        background-color: #d32f2f;
+      }
+    </style>
+  
+  <script>
+    // Check if the user is logged in
+    async function checkAuth() {
+      const response = await fetch("/user_status"); // Backend route to get user status
+      const user = await response.json();
+      if (user.logged_in) {
+        // User is logged in
+        document.getElementById("auth-buttons").style.display = "none"; // Hide login/signup buttons
+        document.getElementById("chat-form").style.display = "block"; // Show chat form
+        loadSessions(); // Fetch sessions for the logged-in user
+      } else {
+        // User is not logged in
+        document.getElementById("auth-buttons").style.display = "block"; // Show login/signup buttons
+        document.getElementById("chat-form").style.display = "none"; // Hide chat form
+      }
+    }
+
+    // Open login modal
+    document.getElementById("login-btn").onclick = () => {
+      document.getElementById("login-modal").style.display = "flex";
+    };
+
+    // Open signup modal
+    document.getElementById("signup-btn").onclick = () => {
+      document.getElementById("signup-modal").style.display = "flex";
+    };
+
+    // Close modals
+    function closeModal() {
+      document.getElementById("login-modal").style.display = "none";
+      document.getElementById("signup-modal").style.display = "none";
+    }
+
+    // Handle login form submission
+    document.getElementById("login-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        alert("Login successful!");
+        closeModal();
+        checkAuth();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Login failed");
+      }
+    };
+
+    // Handle signup form submission
+    document.getElementById("signup-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("signup-username").value;
+      const password = document.getElementById("signup-password").value;
+
+      const response = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        alert("Signup successful! Please log in.");
+        closeModal();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Signup failed");
+      }
+    };
+
+    // Run on page load
+    window.onload = checkAuth;
+  </script>
 
     <script>
       // Fetch and display session list
@@ -695,7 +920,6 @@
         chatBox.scrollTop = chatBox.scrollHeight;
       }
       // Load sessions on page load
-      window.onload = loadSessions;
     </script>
   </body>
 </html>

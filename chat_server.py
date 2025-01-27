@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify, Response, session, copy_current_request_context
+from flask import Flask, request, jsonify, Response, session as login_session, copy_current_request_context
 from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
-
+from werkzeug.security import generate_password_hash, check_password_hash  # Secure password handling
 from datetime import datetime, timezone
 import datetime
 import ollama
@@ -13,14 +13,33 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat_sessions.db'  # SQLite f
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Define the database models: Session and Message
+if len(sys.argv) > 1:
+    try:
+        desiredModel = sys.argv[1]
+    except Exception:
+        desiredModel = 'deepseek-r1:14b'
+else:
+    desiredModel = 'deepseek-r1:14b'
+
+# Define the database models: User, Session, and Message
+class User(db.Model):
+    __tablename__ = 'users'
+    user_id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)  # Hashed password
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))
+    sessions = db.relationship('Session', backref='user', cascade='all, delete-orphan')  # User's sessions
+
+
 class Session(db.Model):
     __tablename__ = 'sessions'
     session_id = db.Column(db.Integer, primary_key=True)
     session_name = db.Column(db.String(100), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))  # Tememporary solution
-    updated_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))  # Tem
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)  # Link to user
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))
     messages = db.relationship('Message', backref='session', cascade='all, delete-orphan')
+
 
 class Message(db.Model):
     __tablename__ = 'messages'
@@ -28,7 +47,7 @@ class Message(db.Model):
     session_id = db.Column(db.Integer, db.ForeignKey('sessions.session_id'), nullable=False)
     role = db.Column(db.String(50), nullable=False)  # "user" or "assistant"
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))  # Temporary solution
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(timezone.utc))
 
 
 @app.cli.command('init-db')
@@ -38,29 +57,108 @@ def init_db():
         db.create_all()
         print("Database initialized!")
 
-# Define the model used for chat
-if len(sys.argv) > 1:
-    try:
-        desiredModel = sys.argv[1]
-    except Exception:
-        desiredModel = 'deepseek-r1:14b'
-else:
-    desiredModel = 'deepseek-r1:14b'
 
 # Temporary storage for chat history (per session or global use)
 chat_history = []
+
+
+# Authentication Routes
+
+@app.route('/register', methods=['POST'])
+def register():
+    """
+    Register a new user.
+    """
+    username = request.json.get('username')
+    password = request.json.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    # Check if the username is already taken
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({"error": "Username is already taken"}), 400
+
+    # Create a new user with hashed password
+    hashed_password = generate_password_hash(password)
+    new_user = User(username=username, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "User registered successfully!"})
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    """
+    Log in the user and create a session.
+    """
+    username = request.json.get('username')
+    password = request.json.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    # Verify the user exists and the password is correct
+    user = User.query.filter_by(username=username).first()
+    if user and check_password_hash(user.password, password):
+        # Store user info in the session
+        login_session['user_id'] = user.user_id
+        login_session['username'] = user.username
+        return jsonify({"message": "Login successful!", "user_id": user.user_id})
+
+    return jsonify({"error": "Invalid username or password"}), 401
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    """
+    Log out the user and clear the session.
+    """
+    login_session.clear()
+    return jsonify({"message": "Logout successful!"})
+
+@app.route('/user_status', methods=['GET'])
+def user_status():
+    """
+    Check whether the user is logged in.
+    Returns the user's status and username if logged in.
+    """
+    if 'user_id' in login_session:
+        # User is logged in — return their status and username
+        return jsonify({
+            "logged_in": True,
+            "username": login_session['username']
+        })
+    
+    # User is not logged in
+    return jsonify({"logged_in": False})
+
+
+# Helper function to get the current logged-in user
+def get_current_user():
+    if 'user_id' in login_session:
+        return User.query.get(login_session['user_id'])
+    return None
+
+
+# Chat Session Routes
 
 @app.route('/')
 def home():
     return render_template('chat.html')  # Defines the chat interface (frontend)
 
+
 @app.route('/new_session', methods=['POST'])
 def new_session():
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         session_name = request.json.get('session_name', 'Untitled Session')
-        new_session = Session(session_name=session_name, created_at=datetime.datetime.now(timezone.utc))
-
-        # Add and commit the session to the database
+        new_session = Session(session_name=session_name, user_id=user.user_id)
         db.session.add(new_session)
         db.session.commit()
 
@@ -71,43 +169,58 @@ def new_session():
 
 @app.route('/sessions', methods=['GET'])
 def get_sessions():
-    sessions = Session.query.order_by(Session.updated_at.asc()).all()
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Fetch only the sessions belonging to the logged-in user
+    sessions = Session.query.filter_by(user_id=user.user_id).order_by(Session.updated_at.asc()).all()
     return jsonify([
         {"session_id": s.session_id, "session_name": s.session_name, "created_at": s.created_at}
         for s in sessions
     ])
 
+
 @app.route('/sessions/<int:session_id>', methods=['GET'])
 def get_session(session_id):
-    try:
-        session_obj = Session.query.get(session_id)
-        
-        if session_obj is None:
-            return jsonify({"error": "Session not found"}), 404
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
 
-        # Return the session data along with its messages
-        messages = [
-            {"role": message.role, "content": message.content, "created_at": message.created_at}
-            for message in session_obj.messages
-        ]
-        return jsonify({"session_id": session_obj.session_id, "session_name": session_obj.session_name, "messages": messages})
-    except Exception as e:
-        return jsonify({"error": "Failed to retrieve session"}), 500
+    session_obj = Session.query.filter_by(session_id=session_id, user_id=user.user_id).first()
+    if session_obj is None:
+        return jsonify({"error": "Session not found"}), 404
+
+    # Return the session data along with its messages
+    messages = [
+        {"role": message.role, "content": message.content, "created_at": message.created_at}
+        for message in session_obj.messages
+    ]
+    return jsonify({"session_id": session_obj.session_id, "session_name": session_obj.session_name, "messages": messages})
 
 
 @app.route('/delete_session/<int:session_id>', methods=['DELETE'])
 def delete_session(session_id):
-    session_to_delete = Session.query.get_or_404(session_id)
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    session_to_delete = Session.query.filter_by(session_id=session_id, user_id=user.user_id).first()
+    if session_to_delete is None:
+        return jsonify({"error": "Session not found"}), 404
+
     db.session.delete(session_to_delete)
     db.session.commit()
     return jsonify({"message": "Session deleted successfully."})
 
+
+# Send Message Route (unchanged except for session/user verification)
 @app.route('/send', methods=['POST'])
 def send():
-    """
-    Handles user input, sends it to the model, streams the response in chunks,
-    and maintains chat context safely using @copy_current_request_context.
-    """
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
     session_id = request.json.get('session_id')
     user_message = request.json.get('message')
 
@@ -176,15 +289,6 @@ def send():
 
     # Return a streaming response
     return Response(generate_stream(), content_type='text/plain')
-
-@app.route('/reset', methods=['POST'])
-def reset():
-    """
-    Resets the conversation history to clear the context.
-    """
-    session.pop('chat_history', None)
-    return jsonify({"message": "Chat history reset."})
-
 
 @app.route('/rename_session/<int:session_id>', methods=['PUT'])
 def rename_session(session_id):
