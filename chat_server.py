@@ -1,10 +1,9 @@
-from flask import Flask, request, jsonify, Response, session, copy_current_request_context, current_app
+from flask import Flask, request, jsonify, Response, session, copy_current_request_context
 from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
 
 from datetime import datetime, timezone
 import datetime
-import threading
 import ollama
 import sys
 
@@ -185,8 +184,6 @@ def send():
             error_message = f"[{datetime.datetime.now()}] [ERROR]: {str(e)}"
             print(error_message)  # Log to console
             yield error_message
-
-
 
     # Return a streaming response
     return Response(generate_stream(), content_type='text/plain')

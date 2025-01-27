@@ -167,7 +167,7 @@
         border-radius: 20px;
         font-size: 14px;
         resize: none; /* Prevent resizing to maintain consistent appearance */
-        line-height: 1.4;
+        line-height: 2;
       }
 
       button {
@@ -303,79 +303,78 @@
       }
 
       .session-item {
-  display: flex;
-  align-items: center; /* Vertically center children */
-  justify-content: space-between; /* Place link on the left and dots menu on the right */
-  padding: 10px;
-  cursor: pointer;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  margin: 5px 0;
-  transition: background-color 0.3s ease;
-}
+        display: flex;
+        align-items: center; /* Vertically center children */
+        justify-content: space-between; /* Place link on the left and dots menu on the right */
+        padding: 10px;
+        cursor: pointer;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        margin: 5px 0;
+        transition: background-color 0.3s ease;
+      }
 
-/* Highlight on hover */
-.session-item:hover {
-  background-color: #808080;
-}
+      /* Highlight on hover */
+      .session-item:hover {
+        background-color: #808080;
+      }
 
-/* Active session styling */
-.session-item.active {
-  background-color: #808080;
-  border-color: #808080;
-}
+      /* Active session styling */
+      .session-item.active {
+        background-color: #808080;
+        border-color: #808080;
+      }
 
-/* Styling for the link */
-.session-link {
-  text-decoration: none;
-  color: #333;
-  font-size: 1rem;
-  flex-grow: 1; /* Take up remaining space on the left */
-  overflow: hidden; /* Prevent content overflow */
-  text-overflow: ellipsis; /* Add ellipsis for long names */
-  white-space: nowrap; /* Prevent wrapping */
-}
+      /* Styling for the link */
+      .session-link {
+        text-decoration: none;
+        color: #333;
+        font-size: 1rem;
+        flex-grow: 1; /* Take up remaining space on the left */
+        overflow: hidden; /* Prevent content overflow */
+        text-overflow: ellipsis; /* Add ellipsis for long names */
+        white-space: nowrap; /* Prevent wrapping */
+      }
 
-/* Options menu styling */
-.options-menu {
-  position: relative;
-}
+      /* Options menu styling */
+      .options-menu {
+        position: relative;
+      }
 
-.dots-button {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  color: #fff;
-  cursor: pointer;
-}
+      .dots-button {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #fff;
+        cursor: pointer;
+      }
 
-.dots-button:hover {
-  color: #808080;
-}
+      .dots-button:hover {
+        color: #808080;
+      }
 
-/* Dropdown menu styling */
-.menu {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 100%;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  z-index: 10;
-}
+      /* Dropdown menu styling */
+      .menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        z-index: 10;
+      }
 
-.menu button {
-  display: block;
-  width: 100%;
-  border: none;
-  padding: 8px 12px;
-  background-color: transparent;
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
-}
-
+      .menu button {
+        display: block;
+        width: 100%;
+        border: none;
+        padding: 8px 12px;
+        background-color: transparent;
+        text-align: left;
+        cursor: pointer;
+        font-size: 14px;
+      }
     </style>
     <!-- Load the marked.js library -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
