@@ -200,5 +200,41 @@ def reset():
     return jsonify({"message": "Chat history reset."})
 
 
+@app.route('/rename_session/<int:session_id>', methods=['PUT'])
+def rename_session(session_id):
+    """
+    Updates the name of the session specified by the session_id.
+    """
+    try:
+        # Fetch the new session name from the request JSON body
+        new_session_name = request.json.get('session_name')
+
+        # Validate the new session name
+        if not new_session_name or new_session_name.strip() == "":
+            return jsonify({"error": "Session name cannot be empty."}), 400
+
+        # Find the session by ID
+        session_obj = Session.query.get(session_id)
+        if session_obj is None:
+            return jsonify({"error": "Session not found."}), 404
+
+        # Update the session name and the updated_at timestamp
+        session_obj.session_name = new_session_name.strip()
+        session_obj.updated_at = datetime.datetime.now(timezone.utc)
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        return jsonify({
+            "message": "Session renamed successfully.",
+            "session_id": session_obj.session_id,
+            "session_name": session_obj.session_name
+        })
+    except Exception as e:
+        print(f"Error renaming session {session_id}: {e}")
+        db.session.rollback()  # Rollback in case of an error
+        return jsonify({"error": "Failed to rename session."}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
