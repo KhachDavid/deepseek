@@ -1,4 +1,7 @@
 
+# install ollama
+# run deepseek-r1:70b
+
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
